@@ -18,4 +18,12 @@ You will need FFMPEG installed to perform the split:
 
 	sudo apt install ffmpeg
 
+A script has been provided called elemental_from_video.py that perform a three stage conversion:
 
+1. Convert the single video file into separate MP2 audio and video files.
+2. Convert these files to [Paketized Elementary Streams (PES)](https://en.wikipedia.org/wiki/Paketized_elementary_stream).
+3. Package the streams into standalone Transport Streams (TS) ready to multiplex.
+
+As an example, to perform this conversion on the hayfever.mp4 files:
+
+	python3 elemental_from_video.py --input Media/hayfever.mp4 --output Media/hayfever
