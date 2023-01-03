@@ -1,9 +1,9 @@
 #!/usr/bin/python3
 
-from click import command, option
+from click import command, IntRange, option
 from pathlib import Path
 from subprocess import CalledProcessError, run
-from tempfile import gettempdir, TemporaryFile
+from tempfile import gettempdir, NamedTemporaryFile
 from typing import IO
 from uuid import uuid4
 
@@ -106,6 +106,8 @@ def convert_to_pes(
 
     temp_video_pes.write(video_pes_proc.stdout)
     temp_audio_pes.write(audio_pes_proc.stdout)
+    temp_video_pes.flush()
+    temp_audio_pes.flush()
 
 
 def convert_to_ts(
@@ -113,12 +115,19 @@ def convert_to_ts(
     temp_video_pes: IO[bytes],
     path_audio_ts: str,
     path_video_ts: str,
+    video_pid,
+    audio_pid,
 ):
     print("Converting PES to TS")
 
     video_ts_proc = run(
         [
             "pesvideo2ts",
+            f"{video_pid}",
+            "25",
+            "112",
+            "7000000",
+            "0",
             temp_video_pes.name,
         ],
         capture_output=True,
@@ -127,6 +136,11 @@ def convert_to_ts(
     audio_ts_proc = run(
         [
             "pesaudio2ts",
+            f"{audio_pid}",
+            "1152",
+            "48000",
+            "384",
+            "0",
             temp_audio_pes.name,
         ],
         capture_output=True,
@@ -150,7 +164,9 @@ def convert_to_ts(
     prompt="Output File Prefix",
     help="The prefix to output the elemental streams to. These will be appened with _audio.pes and _video.pes.",
 )
-def generate_elemental_streams(input: str, output: str):
+@option("--video-pid", prompt="PID for the video stream", type=IntRange(1, 8191))
+@option("--audio-pid", prompt="PID for the video stream", type=IntRange(1, 8191))
+def generate_elemental_streams(input: str, output: str, video_pid: int, audio_pid: int):
     """
     Generates elemental streams for multiplexing from a input video file.
     """
@@ -168,12 +184,19 @@ def generate_elemental_streams(input: str, output: str):
     path_video_ts = f"{output}_video.ts"
     path_audio_ts = f"{output}_audio.ts"
 
-    temp_video_pes = TemporaryFile()
-    temp_audio_pes = TemporaryFile()
+    temp_video_pes = NamedTemporaryFile()
+    temp_audio_pes = NamedTemporaryFile()
 
     convert_to_mp2(input, path_audio_mp2, path_video_mp2)
     convert_to_pes(path_audio_mp2, path_video_mp2, temp_video_pes, temp_audio_pes)
-    convert_to_ts(temp_audio_pes, temp_video_pes, path_audio_ts, path_video_ts)
+    convert_to_ts(
+        temp_audio_pes,
+        temp_video_pes,
+        path_audio_ts,
+        path_video_ts,
+        video_pid,
+        audio_pid,
+    )
 
 
 if __name__ == "__main__":
