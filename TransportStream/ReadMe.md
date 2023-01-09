@@ -26,4 +26,4 @@ A script has been provided called elemental_from_video.py that perform a three s
 
 As an example, to perform this conversion on the hayfever.mp4 files:
 
-	python3 elemental_from_video.py --input Media/hayfever.mp4 --output Media/hayfever
+	python3 elemental_from_video.py --input Media/hayfever.mp4 --output Media/hayfever --video-pid 1001 --audio-pid 1002
