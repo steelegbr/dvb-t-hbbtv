@@ -165,7 +165,7 @@ def convert_to_ts(
     help="The prefix to output the elemental streams to. These will be appened with _audio.pes and _video.pes.",
 )
 @option("--video-pid", prompt="PID for the video stream", type=IntRange(1, 8191))
-@option("--audio-pid", prompt="PID for the video stream", type=IntRange(1, 8191))
+@option("--audio-pid", prompt="PID for the audio stream", type=IntRange(1, 8191))
 def generate_elemental_streams(input: str, output: str, video_pid: int, audio_pid: int):
     """
     Generates elemental streams for multiplexing from a input video file.

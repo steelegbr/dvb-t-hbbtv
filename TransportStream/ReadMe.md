@@ -27,3 +27,11 @@ A script has been provided called elemental_from_video.py that perform a three s
 As an example, to perform this conversion on the hayfever.mp4 files:
 
 	python3 elemental_from_video.py --input Media/hayfever.mp4 --output Media/hayfever --video-pid 1001 --audio-pid 1002
+
+## Generate the HbbTV Feed and Multiplexing
+
+Once you've generated the elemental streams, it's time to generate the HbbTV feed and multiplex the whole thing together. Unfortunately this stage uses Python 2 libraries to configure and generate the streams.
+
+As an example, to generate a mux with HbbTV, run the following command:
+
+	python2 mux_hbbtv.py --video-pid 1001 --audio-pid 1002 --hbbtv-pid 1003 --video-ts ./Media/hayfever_video.ts --audio-ts ./Media/hayfever_audio.ts --network-id 1 --service-id 1 --network-name TestTV --pmt-pid 1031
