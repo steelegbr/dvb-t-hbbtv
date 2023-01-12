@@ -2,8 +2,15 @@
 # This is based heavily on https://github.com/aventuri/opencaster/blob/4640061659c1fefe15bcb5251946d9900916a532/tutorials/hbbtv/hbbtv-http.py#L20
 
 from click import command, IntRange, option
+from dvbobjects.HBBTV.Descriptors import (
+    application_descriptor,
+    application_name_descriptor,
+    simple_application_location_descriptor,
+    transport_protocol_descriptor,
+)
 from dvbobjects.MHP.AIT import (
-    application_information_section
+    application_information_section,
+    application_loop_item,
 )
 from dvbobjects.PSI.NIT import (
     network_descriptor,
@@ -26,6 +33,7 @@ from dvbobjects.PSI.SDT import (
     service_descriptor,
     service_loop_item,
 )
+from os import system
 
 @command()
 @option("--video-pid", prompt="PID for the video stream", type=IntRange(1, 8191))
@@ -39,9 +47,15 @@ from dvbobjects.PSI.SDT import (
 @option("--network-name", prompt="The name for the TV network", default="TestTV")
 @option("--provider-name", prompt="The HbbTV provider name", default="researchmux")
 @option("--service-name", prompt="The HbbTV service name", default="HbbTvTest")
+@option("--org-id", prompt="The organisation ID", type=int, default=10)
+@option("--app-id", prompt="The application ID", type=int, default=1001)
+@option("--app-name", prompt="The name of the application", default="Research App")
+@option("--app-path", prompt="The path to the application")
+@option("--ait-pid", prompt="PID for the Application Information Table", type=IntRange(1, 8191))
+@option("--output", prompt="Output file path")
 def mux_hbbtv(
     video_pid, audio_pid, hbbtv_pid, video_ts, audio_ts, network_id, service_id, network_name,
-    pmt_pid, provider_name, service_name
+    pmt_pid, provider_name, service_name, org_id, app_id, app_name, app_path, ait_pid, output
 ):
     """
     Multiplexes a single video, audio and HbbTV feed for transmission
@@ -50,11 +64,12 @@ def mux_hbbtv(
     nit = network_information_section(
         network_id = network_id,
         network_descriptor_loop = [
-	        network_descriptor(network_name = network_name,), 
+	        network_descriptor(network_name = str(network_name),), 
         ],
         transport_stream_loop = [
             transport_stream_loop_item(
                 transport_stream_id = 1,
+                original_network_id = network_id,
                 transport_descriptor_loop = [
                     service_list_descriptor(
                         dvb_service_descriptor_loop = [
@@ -133,8 +148,8 @@ def mux_hbbtv(
                 service_descriptor_loop = [
                     service_descriptor(
                         service_type = 1, # digital television service
-                        service_provider_name = provider_name,
-                        service_name = service_name,
+                        service_provider_name = str(provider_name),
+                        service_name = str(service_name),
                     ),    
                 ],
             ),	
@@ -146,60 +161,83 @@ def mux_hbbtv(
 
     ait = application_information_section(
         application_type = 0x0010,
-        common_descriptor_loop = [
-		external_application_authorisation_descriptor(
-			application_identifiers = [[organisationId_1,applicationId_1] , [organisationId_2,applicationId_2]],
-			application_priority =     [  			5			          ,		 		1			      ]
-			# This descriptor informs that 2 applications are available on the program by specifying the applications identifiers (couple of organization_Id and application_Id parameters) and their related priorities (5 for the first and 1 for the second).
-			# Actualy our service contains only one application so this descriptor is not relevent and is just here to show you how to use this descriptor.
-			# This descriptor is not mandatory and you could remove it (i.e. common_descriptor_loop = []).
-			) 
-		],
+        common_descriptor_loop = [],
         application_loop = [
-		application_loop_item(
-			organisation_id = organisationId_1,  # this is a demo value, dvb.org should assign an unique value
-			application_id = applicationId_1, 
-			
-			application_control_code = 1, 
-						# 2 is PRESENT, the decoder will add this application to the user choice of application
-						# 1 is AUTOSTART, the application will start immedtiatly to load and to execute
-						# 7 is DISABLED, The application shall not be started and attempts to start it shall fail.
-						# 4 is KILL, it will stop execute the application
-			application_descriptors_loop = [
-				transport_protocol_descriptor(
-					protocol_id = 0x0003, # HTTP transport protocol
-					URL_base = appli_root,
-					URL_extensions = [],
-					transport_protocol_label = 3, # HTTP transport protocol
-				),  
-				application_descriptor(
-					application_profile = 0x0000,
-						#0x0000 basic profile
-						#0x0001 download feature
-						#0x0002 PVR feature
-						#0x0004 RTSP feature
-					version_major = 1, # corresponding to version 1.1.1
-					version_minor = 1,
-					version_micro = 1,
-					service_bound_flag = 1, # 1 means the application is expected to die on service change, 0 will wait after the service change to receive all the AITs and check if the same app is signalled or not
-					visibility = 3, # 3 the applications is visible to the user, 1 the application is visible only to other applications
-					application_priority = 1, # 1 is lowset, it is used when more than 1 applications is executing
-					transport_protocol_labels = [3], # If more than one protocol is signalled then each protocol is an alternative delivery mechanism. The ordering indicates 
-													 # the broadcaster's view of which transport connection will provide the best user experience (first is best)
-				),
-				application_name_descriptor(
-					application_name = appli_name,
-					 ISO_639_language_code = "FRA"
-				),
-				simple_application_location_descriptor(initial_path_bytes = appli_path),		
-			]
-		),
-		
-   	],
+			application_loop_item(
+				organisation_id = org_id,  # this is a demo value, dvb.org should assign an unique value
+				application_id = app_id, 
+				application_control_code = 1, 
+				application_descriptors_loop = [
+					transport_protocol_descriptor(
+							protocol_id = 0x0001, # the application is broadcasted on a DSMCC
+							transport_protocol_label = 1, # the application is broadcasted on a DSMCC
+							remote_connection = 0, # shall be 0 for HbbTV 
+							component_tag = 0xB, # carousel common tag and association tag
+					),
+					application_descriptor(
+							application_profile = 0x0000, 
+							version_major = 1, # corresponding to version 1.1.1
+							version_minor = 1,
+							version_micro = 1,
+							service_bound_flag = 1, # 1 means the application is expected to die on service change, 0 will wait after the service change to receive all the AITs and check if the same app is signalled or not
+							visibility = 3, # 3 the applications is visible to the user, 1 the application is visible only to other applications
+							application_priority = 1, # 1 is lowset, it is used when more than 1 applications is executing
+							transport_protocol_labels = [1], # carousel Id
+					),
+					application_name_descriptor(application_name = str(app_name)),
+					simple_application_location_descriptor(initial_path_bytes = str(app_path)),
+				]
+			),
+		],
         version_number = 1,
         section_number = 0,
         last_section_number = 0,
 	)
+
+    out = open("./nit.sec", "wb")
+    out.write(nit.pack())
+    out.close
+    out = open("./nit.sec", "wb") # python  flush bug
+    out.close
+    system('/usr/bin/sec2ts 16 < ./nit.sec > ./Media/nit.ts')
+
+    out = open("./pat.sec", "wb")
+    out.write(pat.pack())
+    out.close
+    out = open("./pat.sec", "wb") # python   flush bug
+    out.close
+    system('/usr/bin/sec2ts 0 < ./pat.sec > ./Media/pat.ts')
+
+    out = open("./sdt.sec", "wb")
+    out.write(sdt.pack())
+    out.close
+    out = open("./sdt.sec", "wb") # python   flush bug
+    out.close
+    system('/usr/bin/sec2ts 17 < ./sdt.sec > ./Media/sdt.ts')
+
+    out = open("./pmt.sec", "wb")
+    out.write(pmt.pack())
+    out.close
+    out = open("./pmt.sec", "wb") # python   flush bug
+    out.close
+    system('/usr/bin/sec2ts ' + str(pmt_pid) + ' < ./pmt.sec > ./Media/pmt.ts')
+
+    out = open("./ait.sec", "wb")
+    out.write(ait.pack())
+    out.close
+    out = open("./ait.sec", "wb") # python   flush bug
+    out.close
+    system('/usr/bin/sec2ts ' + str(ait_pid) + ' < ./ait.sec > ./Media/ait.ts')
+
+    system(
+        '/usr/bin/tscbrmuxer b:2300000 {0} b:188000 {1} b:3008 ./Media/pat.ts b:3008 ./Media/pmt.ts b:1500 ./Media/sdt.ts b:1400 ./Media/nit.ts b:2000 ./Media/ait.ts b:8770084 ./Media/null.ts > {2}'.format(
+            video_ts,
+            audio_ts,
+            output
+        )
+    )
+
+    system('rm *.sec')
 
 if __name__ == "__main__":
     mux_hbbtv()

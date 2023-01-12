@@ -34,4 +34,4 @@ Once you've generated the elemental streams, it's time to generate the HbbTV fee
 
 As an example, to generate a mux with HbbTV, run the following command:
 
-	python2 mux_hbbtv.py --video-pid 1001 --audio-pid 1002 --hbbtv-pid 1003 --video-ts ./Media/hayfever_video.ts --audio-ts ./Media/hayfever_audio.ts --network-id 1 --service-id 1 --network-name TestTV --pmt-pid 1031
+	python2 mux_hbbtv.py --video-pid 1001 --audio-pid 1002 --hbbtv-pid 1003 --video-ts ./Media/hayfever_video.ts --audio-ts ./Media/hayfever_audio.ts --network-id 1 --service-id 1 --network-name TestTV --pmt-pid 1031 --org-id 10 --app-id 1001 --app-name "Research TV App" --app-path ../HbbTV/test.html --provider-name "Research Mux" --service-name "HbbTvTest" --ait-pid 2001 --output ./Media/hbb.ts
