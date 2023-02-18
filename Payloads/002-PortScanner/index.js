@@ -1,6 +1,17 @@
-var logger = new Logger("002-PortScanner");
-logger.log("Test 123!");
-Logger.show();
+window.addEventListener("load", init);
+
+var init = function () {
+    var logger = new Logger("002-PortScanner");
+    logger.log("Test 123!");
+    Logger.show();
+
+    portIsOpen('172.16.2.1', 8080, 30).then((res) => {
+        let [isOpen, m, sumOpen, sumClosed] = res;
+        logger.log('Is 172.16.2.1:8080 open? ' + isOpen);
+    })
+}
+
+
 
 var portIsOpen = function (hostToScan, portToScan, N) {
     return new Promise((resolve, reject) => {
@@ -53,9 +64,3 @@ var portIsOpen = function (hostToScan, portToScan, N) {
         })();
     });
 }
-
-// how to use
-portIsOpen('172.16.2.1', 8080, 30).then((res) => {
-    let [isOpen, m, sumOpen, sumClosed] = res;
-    logger.log('Is 172.16.2.1:8080 open? ' + isOpen);
-})
