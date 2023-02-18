@@ -3,6 +3,7 @@ window.addEventListener("load", init);
 var nav;
 
 function init() {
+  console.log("hbbtv");
   var appManager = document.getElementById("applicationManager");
   var appObject = appManager.getOwnerApplication(document);
   if (appObject) {
