@@ -1,6 +1,7 @@
 window.addEventListener("load", init);
 
-var init = function () {
+function init() {
+    console.log("Here!");
     var logger = new Logger("002-PortScanner");
     logger.log("Test 123!");
     Logger.show();
