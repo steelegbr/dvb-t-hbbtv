@@ -1,11 +1,12 @@
 from dotenv import dotenv_values
-from fastapi import FastAPI
+from fastapi import APIRouter, FastAPI
 from log import log_router
 from pymongo import MongoClient
 
 config = dotenv_values(".env")
 
 app = FastAPI()
+prefix_router = APIRouter(prefix="/api")
 
 
 @app.on_event("startup")
@@ -19,4 +20,5 @@ def shutdown_db_client():
     app.mongodb_client.close()
 
 
-app.include_router(log_router, prefix="/log")
+prefix_router.include_router(log_router, prefix="/log")
+app.include_router(prefix_router)
