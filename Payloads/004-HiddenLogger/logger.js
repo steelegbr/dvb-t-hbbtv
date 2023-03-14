@@ -8,7 +8,7 @@ define(
         const session_id = uuid.v4();
 
         return function (level, message) {
-            const log_url = `${BASE_URL}/api/logs/${session_id}`;
+            const log_url = `${BASE_URL}api/logs/${session_id}`;
             fetch(
                 log_url,
                 {
