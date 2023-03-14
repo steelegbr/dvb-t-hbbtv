@@ -18,7 +18,10 @@ define(
                             level: level,
                             entry: message
                         }
-                    )
+                    ),
+                    headers: {
+                        "Content-Type": "application/json"
+                    }
                 }
             );
         }
